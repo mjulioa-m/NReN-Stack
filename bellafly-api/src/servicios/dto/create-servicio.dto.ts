@@ -16,13 +16,13 @@ export class CreateServicioDto {
   @IsNotEmpty()
   descripcion: string;
 
-  @IsNumber({ maxDecimalPlaces: 2 }) // Acepta decimales (ej: 10.50)
-  @IsPositive() // Debe ser un número positivo
-  @Min(0.01) // Precio mínimo
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsPositive()
+  @Min(0.01)
   precio: number;
 
-  @IsInt() // Debe ser un número entero
+  @IsInt()
   @IsPositive()
-  @Min(1) // Al menos 1 minuto
+  @Min(1) // Al menos 1 minuto. Lo que tu duras en otras cosas
   duracion: number; // Duración en minutos
 }

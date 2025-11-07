@@ -8,14 +8,14 @@ import { ServiciosModule } from './servicios/servicios.module';
 
 @Module({
   imports: [
-    // 1. Cargar el .env PRIMERO y hacerlo GLOBAL
+    // 1. Cargar el .env PRIMERO y hacerlo GLOBAL. Sino como hacemos funcionar al JWT? Por cierto crea tu el .env, algo tinenes q hacer
     ConfigModule.forRoot({
       isGlobal: true,
     }),
 
-    // 2. Crear la conexión principal a la BD (el DataSource)
+    // 2. Crear la conexión principal a la BD (el DataSource). Esto tambien te toca a ti, claramente
     TypeOrmModule.forRootAsync({
-      imports: [ConfigModule], // Usa el config module
+      imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
@@ -25,11 +25,10 @@ import { ServiciosModule } from './servicios/servicios.module';
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_NAME'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: true, // ¡Solo para desarrollo!
+        synchronize: true, // ¡Solo para desarrollo!. Si la dejas en producción vas a llorar. Si quieres saber por qué preguntale a chatgpt, cule pava explicarte pero en resumen puede borrar informacion
       }),
     }),
 
-    // 3. Ahora sí, cargar tu módulo (que depende de la BD)
     PrestadoresModule,
 
     ServiciosModule,

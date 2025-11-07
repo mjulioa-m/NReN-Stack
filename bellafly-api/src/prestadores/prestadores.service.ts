@@ -1,22 +1,22 @@
 import {
   ConflictException,
   Injectable,
-  UnauthorizedException, // <-- 1. Importar
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreatePrestadorDto } from './dto/create-prestadore.dto';
 import { Prestador } from './entities/prestadore.entity';
 import * as bcrypt from 'bcrypt';
-import { JwtService } from '@nestjs/jwt'; // <-- 2. Importar
-import { LoginPrestadorDto } from './dto/login-prestador.dto'; // <-- 3. Importar
+import { JwtService } from '@nestjs/jwt';
+import { LoginPrestadorDto } from './dto/login-prestador.dto';
 
 @Injectable()
 export class PrestadoresService {
   constructor(
     @InjectRepository(Prestador)
     private prestadorRepository: Repository<Prestador>,
-    private jwtService: JwtService, // <-- 4. Inyectar el servicio de JWT
+    private jwtService: JwtService,
   ) {}
 
   async create(createPrestadorDto: CreatePrestadorDto) {
@@ -30,7 +30,7 @@ export class PrestadoresService {
       throw new ConflictException('El email ya está registrado');
     }
 
-    // 4. Hashear la contraseña
+    // 4. Hashear la contraseña. La seguridad primero q estamos en LATAM
     const salt = await bcrypt.genSalt();
     const passwordHasheada = await bcrypt.hash(password, salt);
 
@@ -45,25 +45,17 @@ export class PrestadoresService {
     const prestadorGuardado =
       await this.prestadorRepository.save(nuevoPrestador);
 
-    // 7. ¡ESTA ES LA LÍNEA NUEVA Y CORRECTA!
-    //    Creamos un objeto 'resultado' que tiene todo lo de 'prestadorGuardado'
-    //    ...excepto la propiedad 'password'.
     const { password: _, ...resultado } = prestadorGuardado;
 
-    // 8. Devolver el resultado (el prestador SIN la contraseña)
     return resultado;
   }
-  // ... (aquí está tu método 'create' que ya hicimos) ...
 
-  // 5. AÑADIR ESTE NUEVO MÉTODO COMPLETO
   async login(loginPrestadorDto: LoginPrestadorDto) {
     const { email, password } = loginPrestadorDto;
 
-    // A. Buscar al usuario PDIENDO la contraseña
-    // (Recuerda que la pusimos con 'select: false' en la entidad)
     const prestador = await this.prestadorRepository.findOne({
       where: { email },
-      select: ['id', 'email', 'nombre', 'password'], // ¡Pedimos la password explícitamente!
+      select: ['id', 'email', 'nombre', 'password'],
     });
 
     if (!prestador) {
@@ -82,7 +74,7 @@ export class PrestadoresService {
 
     // C. Si todo es correcto, crear el Token (Payload)
     const payload = {
-      sub: prestador.id, // 'sub' es el estándar para el ID de usuario
+      sub: prestador.id, // 'sub' es el estándar para el ID de usuario. según gemini, lo deje porque es corto
       email: prestador.email,
       rol: 'prestador', // ¡Importante para los permisos!
     };
@@ -95,6 +87,4 @@ export class PrestadoresService {
       accessToken, // Esto es lo que la app de React Native guardará
     };
   }
-
-  // ... (aquí está el resto de métodos 'findAll', 'findOne', etc.)
 }

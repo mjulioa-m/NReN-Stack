@@ -12,16 +12,15 @@ export class Servicio {
   @Column()
   descripcion: string;
 
-  @Column('decimal', { precision: 10, scale: 2 }) // Para dinero
+  @Column('decimal', { precision: 10, scale: 2 }) // Para dinero, plata, money. Lo que no generamos con codigos abiertos :(
   precio: number;
 
-  @Column('int') // Duración en minutos
+  @Column('int') // Duración en minutos.Si quieres usar horas o dias ya cambialo tú.
   duracion: number;
 
-  // --- ¡AQUÍ ESTÁ LA RELACIÓN! ---
   @ManyToOne(
     () => Prestador, // La entidad con la que se relaciona
-    (prestador) => prestador.servicios, // El campo en la otra tabla (que aún no creamos)
+    (prestador) => prestador.servicios,
     { eager: false }, // No cargar el prestador automáticamente
   )
   prestador: Prestador;
