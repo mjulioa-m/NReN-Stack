@@ -1,0 +1,17 @@
+# Archivos del Sistema Operativo
+.DS_Store
+Thumbs.db
+
+# Archivos de IDE
+.vscode/
+.idea/
+
+# Archivos de Node.js
+**/node_modules/
+**/dist/
+npm-debug.log*
+yarn-error.log*
+
+# Archivos sensibles (¡MUY IMPORTANTE!)
+**/.env
+.env.local
