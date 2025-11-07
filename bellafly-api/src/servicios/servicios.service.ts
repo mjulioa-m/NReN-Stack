@@ -1,15 +1,30 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  Inject,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Prestador } from 'src/prestadores/entities/prestadore.entity';
 import { Repository } from 'typeorm';
 import { CreateServicioDto } from './dto/create-servicio.dto';
 import { Servicio } from './entities/servicio.entity';
 import { UpdateServicioDto } from './dto/update-servicio.dto';
+import { FotoServicio } from './entities/foto-servicio.entity';
+import { CLOUDINARY } from 'src/cloudinary/cloudinary.provider';
+import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
+import * as stream from 'stream';
 @Injectable()
 export class ServiciosService {
   constructor(
     @InjectRepository(Servicio)
     private servicioRepository: Repository<Servicio>,
+
+    @InjectRepository(FotoServicio)
+    private fotoServicioRepository: Repository<FotoServicio>,
+
+    @Inject(CLOUDINARY)
+    private cloudinarySdk: typeof cloudinary,
   ) {}
 
   async create(createServicioDto: CreateServicioDto, prestador: Prestador) {
@@ -80,5 +95,72 @@ export class ServiciosService {
       message: 'Servicio eliminado exitosamente',
       servicioBorrado: servicio,
     };
+  }
+
+  async addFoto(
+    idServicio: string,
+    prestador: Prestador,
+    file: Express.Multer.File,
+  ) {
+    if (!file) {
+      throw new BadRequestException('No se ha enviado ningún archivo');
+    }
+
+    // 1. Verificar que el servicio existe y es del prestador
+    //    ¡Reutilizamos la lógica que ya hicimos!
+    const servicio = await this.findOne(idServicio, prestador);
+
+    // 2. Subir el archivo a Cloudinary (usando un helper)
+    let uploadResult: UploadApiResponse;
+    try {
+      uploadResult = await this.uploadToCloudinary(file);
+    } catch (error) {
+      throw new BadRequestException(
+        `Error al subir la imagen: ${error.message}`,
+      );
+    }
+
+    // 3. Crear la entidad FotoServicio con la URL
+    const newFoto = this.fotoServicioRepository.create({
+      url: uploadResult.secure_url,
+      servicio: servicio,
+    });
+
+    // 4. Guardar en la BD
+    await this.fotoServicioRepository.save(newFoto);
+
+    return newFoto;
+  }
+
+  // --- 8. AÑADIR ESTE MÉTODO HELPER PRIVADO ---
+  private async uploadToCloudinary(
+    file: Express.Multer.File,
+  ): Promise<UploadApiResponse> {
+    return new Promise((resolve, reject) => {
+      // Usamos upload_stream para subir desde un buffer
+      const upload = this.cloudinarySdk.uploader.upload_stream(
+        {
+          resource_type: 'auto', // Detecta si es imagen o video
+          folder: 'servicios', // Opcional: para organizar en Cloudinary
+        },
+        (error, result) => {
+          if (error) {
+            return reject(error);
+          }
+          if (!result) {
+            return reject(
+              new Error(
+                'Fallo la subida a Cloudinary, no se recibió resultado.',
+              ),
+            );
+          }
+          resolve(result);
+        },
+      );
+      // Convertimos el buffer del archivo en un stream legible y lo pasamos
+      const bufferStream = new stream.PassThrough();
+      bufferStream.end(file.buffer);
+      bufferStream.pipe(upload);
+    });
   }
 }

@@ -2,6 +2,7 @@ import {
   ConflictException,
   Injectable,
   UnauthorizedException,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -10,6 +11,7 @@ import { Prestador } from './entities/prestadore.entity';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { LoginPrestadorDto } from './dto/login-prestador.dto';
+import { UpdatePerfilDto } from './dto/update-perfil.dto';
 
 @Injectable()
 export class PrestadoresService {
@@ -86,5 +88,27 @@ export class PrestadoresService {
       message: 'Login exitoso',
       accessToken, // Esto es lo que la app de React Native guardará
     };
+  }
+
+  async updatePerfil(prestadorId: string, updatePerfilDto: UpdatePerfilDto) {
+    // 1. Buscamos el prestador (sin 'await' para que sea una referencia)
+    // Usamos 'findOneBy' que es más simple
+    const prestador = await this.prestadorRepository.findOneBy({
+      id: prestadorId,
+    });
+
+    if (!prestador) {
+      throw new NotFoundException('Prestador no encontrado');
+    }
+
+    // 2. Fusionamos los datos del DTO con la entidad encontrada
+    Object.assign(prestador, updatePerfilDto);
+
+    // 3. Guardamos los cambios
+    const prestadorActualizado = await this.prestadorRepository.save(prestador);
+
+    // 4. Devolvemos el perfil actualizado sin el password
+    const { password: _, ...resultado } = prestadorActualizado;
+    return resultado;
   }
 }

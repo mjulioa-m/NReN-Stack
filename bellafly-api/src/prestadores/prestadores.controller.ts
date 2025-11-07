@@ -1,9 +1,18 @@
-import { Controller, Post, Body, Get, UseGuards, Req } from '@nestjs/common'; // <-- Asegúrate de que 'Body' esté importado
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  UseGuards,
+  Req,
+  Patch,
+} from '@nestjs/common'; // <-- Asegúrate de que 'Body' esté importado
 import { AuthGuard } from '@nestjs/passport';
 import { PrestadoresService } from './prestadores.service';
 import { CreatePrestadorDto } from './dto/create-prestadore.dto';
 import { LoginPrestadorDto } from './dto/login-prestador.dto';
 import { Prestador } from './entities/prestadore.entity';
+import { UpdatePerfilDto } from './dto/update-perfil.dto';
 
 @Controller('prestadores')
 export class PrestadoresController {
@@ -28,5 +37,12 @@ export class PrestadoresController {
       id: prestador.id,
       email: prestador.email,
     };
+  }
+
+  @Patch('mi-perfil')
+  @UseGuards(AuthGuard())
+  updatePerfil(@Body() updatePerfilDto: UpdatePerfilDto, @Req() req) {
+    const prestador: Prestador = req.user;
+    return this.prestadoresService.updatePerfil(prestador.id, updatePerfilDto);
   }
 }

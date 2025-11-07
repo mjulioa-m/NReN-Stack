@@ -9,13 +9,16 @@ import {
   ParseUUIDPipe,
   Patch,
   Delete,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { ServiciosService } from './servicios.service';
 import { CreateServicioDto } from './dto/create-servicio.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { Prestador } from 'src/prestadores/entities/prestadore.entity';
 import { UpdateServicioDto } from './dto/update-servicio.dto';
-
+import { FileInterceptor } from '@nestjs/platform-express';
+import type { Express } from 'express';
 @Controller('servicios')
 export class ServiciosController {
   constructor(private readonly serviciosService: ServiciosService) {}
@@ -60,5 +63,16 @@ export class ServiciosController {
     const prestador: Prestador = req.user;
 
     return this.serviciosService.remove(id, prestador);
+  }
+  @Post(':id/fotos') // Ruta: POST /servicios/ID_DEL_SERVICIO/fotos
+  @UseGuards(AuthGuard())
+  @UseInterceptors(FileInterceptor('file')) // <-- 4. Atrapa el archivo!
+  addFoto(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() req,
+    @UploadedFile() file: Express.Multer.File, // <-- 5. Obtiene el archivo
+  ) {
+    const prestador: Prestador = req.user;
+    return this.serviciosService.addFoto(id, prestador, file);
   }
 }

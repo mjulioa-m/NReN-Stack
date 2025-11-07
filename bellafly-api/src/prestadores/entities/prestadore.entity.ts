@@ -17,6 +17,37 @@ export class Prestador {
   @Column({ select: false }) // No se incluye en las consultas por defecto, sino nos hackean
   password: string; // Aquí se guarda el hash de bcrypt, porque las contraseñas no se guardan en plano, crack
 
+  @Column({ type: 'text', nullable: true }) // Texto largo para la bio
+  biografia: string;
+
+  @Column({ nullable: true }) // Nombre de la marca
+  nombreProfesional: string;
+
+  @Column({ nullable: true })
+  especialidad: string;
+
+  @Column({ nullable: true }) // Guardamos la URL de la foto de Cloudinary/S3
+  urlFotoPerfil: string;
+
+  @Column({ nullable: true })
+  direccion: string; // Dirección del local
+
+  @Column({ default: false }) // Por defecto, no aceptan domicilio
+  aceptaDomicilio: boolean;
+
+  // --- Redes Sociales y Contacto ---
+  @Column({ nullable: true })
+  whatsapp: string;
+
+  @Column({ nullable: true })
+  instagram: string;
+
+  @Column({ nullable: true })
+  linkedin: string;
+
+  @Column({ nullable: true })
+  sitioWeb: string;
+
   @OneToMany(
     () => Servicio,
     (servicio) => servicio.prestador, // El campo en la otra tabla

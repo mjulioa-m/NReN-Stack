@@ -1,5 +1,12 @@
 import { Prestador } from 'src/prestadores/entities/prestadore.entity';
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  OneToMany,
+} from 'typeorm';
+import { FotoServicio } from './foto-servicio.entity';
 
 @Entity()
 export class Servicio {
@@ -24,4 +31,11 @@ export class Servicio {
     { eager: false }, // No cargar el prestador automáticamente
   )
   prestador: Prestador;
+
+  @OneToMany(
+    () => FotoServicio,
+    (foto) => foto.servicio,
+    { cascade: true }, // Facilita guardar/actualizar
+  )
+  fotos: FotoServicio[];
 }

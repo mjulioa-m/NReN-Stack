@@ -7,6 +7,8 @@ import { PrestadoresModule } from './prestadores/prestadores.module';
 import { ServiciosModule } from './servicios/servicios.module';
 import { HorariosModule } from './horarios/horarios.module';
 import { BloqueosModule } from './bloqueos/bloqueos.module';
+import { PortafolioModule } from './portafolio/portafolio.module';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
 
 @Module({
   imports: [
@@ -38,6 +40,9 @@ import { BloqueosModule } from './bloqueos/bloqueos.module';
     HorariosModule,
 
     BloqueosModule,
+
+    PortafolioModule,
+    CloudinaryModule,
   ],
   controllers: [AppController],
   providers: [AppService],
