@@ -4,7 +4,7 @@ import { Prestador } from 'src/prestadores/entities/prestadore.entity';
 import { Repository } from 'typeorm';
 import { CreateServicioDto } from './dto/create-servicio.dto';
 import { Servicio } from './entities/servicio.entity';
-
+import { UpdateServicioDto } from './dto/update-servicio.dto';
 @Injectable()
 export class ServiciosService {
   constructor(
@@ -55,5 +55,30 @@ export class ServiciosService {
     }
 
     return servicio;
+  }
+
+  async update(
+    id: string,
+    updateServicioDto: UpdateServicioDto,
+    prestador: Prestador,
+  ) {
+    const servicio = await this.findOne(id, prestador);
+
+    Object.assign(servicio, updateServicioDto);
+
+    return this.servicioRepository.save(servicio);
+  }
+
+  async remove(id: string, prestador: Prestador) {
+    //Reutilizamos 'findOne' para encontrar el servicio, hay que reutilizar pa, para eso creamos servicios
+    const servicio = await this.findOne(id, prestador);
+
+    await this.servicioRepository.remove(servicio);
+
+    // Devolvemos un mensaje con el objeto borrado para que en algun momento del 2030 que hagamos el front este pueda decir que tal elemento fue borrado, o algo asi se me ocurrio ahora
+    return {
+      message: 'Servicio eliminado exitosamente',
+      servicioBorrado: servicio,
+    };
   }
 }
