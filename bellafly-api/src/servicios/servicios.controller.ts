@@ -64,15 +64,30 @@ export class ServiciosController {
 
     return this.serviciosService.remove(id, prestador);
   }
-  @Post(':id/fotos') // Ruta: POST /servicios/ID_DEL_SERVICIO/fotos
+  @Post(':id/fotos')
   @UseGuards(AuthGuard())
-  @UseInterceptors(FileInterceptor('file')) // <-- 4. Atrapa el archivo!
+  @UseInterceptors(FileInterceptor('file'))
   addFoto(
     @Param('id', ParseUUIDPipe) id: string,
     @Req() req,
-    @UploadedFile() file: Express.Multer.File, // <-- 5. Obtiene el archivo
+    @UploadedFile() file: Express.Multer.File,
   ) {
     const prestador: Prestador = req.user;
     return this.serviciosService.addFoto(id, prestador, file);
+  }
+  @Get(':id/fotos')
+  findFotos(@Param('id', ParseUUIDPipe) id: string) {
+    return this.serviciosService.findFotosByServicio(id);
+  }
+  //este endpoint no lo he probado en postman porque tengo que llamar otro antes para buscar el servicio y la foto, asi que pruebenlo ustedes y me dicen si funciona, sino ya lo testeare cuando lo necesite en el front xd
+  @Delete(':idServicio/fotos/:idFoto')
+  @UseGuards(AuthGuard())
+  removeFoto(
+    @Param('idServicio', ParseUUIDPipe) idServicio: string,
+    @Param('idFoto', ParseUUIDPipe) idFoto: string,
+    @Req() req,
+  ) {
+    const prestador: Prestador = req.user;
+    return this.serviciosService.removeFoto(idServicio, idFoto, prestador);
   }
 }

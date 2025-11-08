@@ -13,6 +13,7 @@ import { UpdateServicioDto } from './dto/update-servicio.dto';
 import { FotoServicio } from './entities/foto-servicio.entity';
 import { CLOUDINARY } from 'src/cloudinary/cloudinary.provider';
 import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
+
 import * as stream from 'stream';
 @Injectable()
 export class ServiciosService {
@@ -137,11 +138,10 @@ export class ServiciosService {
     file: Express.Multer.File,
   ): Promise<UploadApiResponse> {
     return new Promise((resolve, reject) => {
-      // Usamos upload_stream para subir desde un buffer
       const upload = this.cloudinarySdk.uploader.upload_stream(
         {
-          resource_type: 'auto', // Detecta si es imagen o video
-          folder: 'servicios', // Opcional: para organizar en Cloudinary
+          resource_type: 'auto',
+          folder: 'servicios', // Opcional: para organizar en Cloudinary. ponlo o vuelvete loco
         },
         (error, result) => {
           if (error) {
@@ -157,10 +157,74 @@ export class ServiciosService {
           resolve(result);
         },
       );
-      // Convertimos el buffer del archivo en un stream legible y lo pasamos
       const bufferStream = new stream.PassThrough();
       bufferStream.end(file.buffer);
       bufferStream.pipe(upload);
     });
+  }
+  async findFotosByServicio(idServicio: string) {
+    // 1. Primero, verificamos que el servicio (padre) exista. porque sino da error perro
+    const servicio = await this.servicioRepository.findOneBy({
+      id: idServicio,
+    });
+
+    if (!servicio) {
+      throw new NotFoundException(
+        `Servicio con ID "${idServicio}" no encontrado`,
+      );
+    }
+
+    // 2. Si existe, buscamos todas las fotos asociadas a él
+    const fotos = await this.fotoServicioRepository.find({
+      where: {
+        servicio: {
+          id: idServicio,
+        },
+      },
+      select: ['id', 'url', 'descripcion'], // Solo devolvemos lo necesario, porque no te interesa mas nada, sapo
+    });
+
+    return fotos;
+  }
+
+  async removeFoto(idServicio: string, idFoto: string, prestador: Prestador) {
+    await this.findOne(idServicio, prestador);
+
+    // 2. Buscar la foto específica que queremos borrar. porque si la cagas, pierdes
+    const foto = await this.fotoServicioRepository.findOne({
+      where: {
+        id: idFoto,
+        servicio: { id: idServicio },
+      },
+    });
+
+    if (!foto) {
+      throw new NotFoundException(
+        `Foto con ID "${idFoto}" no encontrada en este servicio`,
+      );
+    }
+
+    try {
+      const publicId = this.extractPublicIdFromUrl(foto.url);
+
+      await this.cloudinarySdk.uploader.destroy(publicId);
+    } catch (error) {
+      console.error('Error al borrar de Cloudinary:', error);
+      // throw new InternalServerErrorException('Error al borrar la imagen de Cloudinary'); pero te recomiendo que si esa vaina esta caida por alguna razon sigas para adelante y borres la url de la base de datos, si no lo quieres hacer asi activa esta funcion y suerte contigo.
+    }
+
+    // 4. Borrar la foto de nuestra base de datos. 20/10 hay q hacerlo si o si aunque lo otro falle. y si no te gusta haz un fork y cambialo sapo
+    await this.fotoServicioRepository.remove(foto);
+
+    return { message: 'Foto eliminada exitosamente' };
+  }
+  //te estabas preguntado ese metodo raro que era? bueno es para poder poner bien las urls y borrar lo que es y donde es
+  private extractPublicIdFromUrl(url: string): string {
+    const parts = url.split('/');
+    const folder = parts[parts.length - 2];
+    const publicIdWithExtension = parts[parts.length - 1];
+    const publicId = publicIdWithExtension.split('.')[0]; // Quitar .jpg/.png o videos si tienes, deberia de funcionar tambien todo esto para videos pero no lo he probado, pruebelo usted para ver si sirve pa algo
+
+    return `${folder}/${publicId}`;
   }
 }
