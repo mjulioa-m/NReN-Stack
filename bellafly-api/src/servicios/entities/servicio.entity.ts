@@ -7,6 +7,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import { FotoServicio } from './foto-servicio.entity';
+import { Reserva } from 'src/reservas/entities/reserva.entity';
 
 @Entity()
 export class Servicio {
@@ -38,4 +39,7 @@ export class Servicio {
     { cascade: true }, // Facilita guardar/actualizar
   )
   fotos: FotoServicio[];
+
+  @OneToMany(() => Reserva, (reserva) => reserva.servicio)
+  reservas: Reserva[];
 }

@@ -2,6 +2,7 @@ import { Bloqueo } from 'src/bloqueos/entities/bloqueo.entity';
 import { Horario } from 'src/horarios/entities/horario.entity';
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { Servicio } from 'src/servicios/entities/servicio.entity'; // <-- 1. Importar
+import { Reserva } from 'src/reservas/entities/reserva.entity';
 
 @Entity()
 export class Prestador {
@@ -26,8 +27,8 @@ export class Prestador {
   @Column({ nullable: true })
   especialidad: string;
 
-  @Column({ nullable: true }) // Guardamos la URL de la foto de Cloudinary/S3
-  urlFotoPerfil: string;
+  @Column({ type: 'varchar', nullable: true }) // Guardamos la URL de la foto de Cloudinary/S3
+  urlFotoPerfil: string | null;
 
   @Column({ nullable: true })
   direccion: string; // Dirección del local
@@ -63,4 +64,7 @@ export class Prestador {
 
   @OneToMany(() => Bloqueo, (bloqueo) => bloqueo.prestador)
   bloqueos: Bloqueo[];
+
+  @OneToMany(() => Reserva, (reserva) => reserva.prestador)
+  reservas: Reserva[];
 }

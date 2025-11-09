@@ -3,6 +3,8 @@ import {
   Injectable,
   UnauthorizedException,
   NotFoundException,
+  BadRequestException,
+  Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -12,13 +14,18 @@ import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { LoginPrestadorDto } from './dto/login-prestador.dto';
 import { UpdatePerfilDto } from './dto/update-perfil.dto';
+import { CLOUDINARY } from 'src/cloudinary/cloudinary.provider';
+import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
 
+import * as stream from 'stream';
 @Injectable()
 export class PrestadoresService {
   constructor(
     @InjectRepository(Prestador)
     private prestadorRepository: Repository<Prestador>,
     private jwtService: JwtService,
+    @Inject(CLOUDINARY)
+    private cloudinarySdk: typeof cloudinary,
   ) {}
 
   async create(createPrestadorDto: CreatePrestadorDto) {
@@ -104,5 +111,89 @@ export class PrestadoresService {
 
     const { password: _, ...resultado } = prestadorActualizado;
     return resultado;
+  }
+
+  async uploadFotoPerfil(prestadorId: string, file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('No se ha enviado ningún archivo');
+    }
+
+    const prestador = await this.prestadorRepository.findOneBy({
+      id: prestadorId,
+    });
+    if (!prestador) {
+      throw new NotFoundException('Prestador no encontrado');
+    }
+
+    let uploadResult: UploadApiResponse;
+    try {
+      uploadResult = await this.uploadToCloudinary(file);
+    } catch (error) {
+      throw new BadRequestException(
+        `Error al subir la imagen: ${error.message}`,
+      );
+    }
+
+    prestador.urlFotoPerfil = uploadResult.secure_url;
+    await this.prestadorRepository.save(prestador);
+
+    return { urlFotoPerfil: prestador.urlFotoPerfil };
+  }
+
+  private async uploadToCloudinary(
+    file: Express.Multer.File,
+  ): Promise<UploadApiResponse> {
+    return new Promise((resolve, reject) => {
+      const upload = this.cloudinarySdk.uploader.upload_stream(
+        {
+          resource_type: 'auto',
+          folder: 'prestadores',
+        },
+        (error, result) => {
+          if (error) return reject(error);
+          if (!result) return reject(new Error('Fallo la subida a Cloudinary'));
+          resolve(result);
+        },
+      );
+      const bufferStream = new stream.PassThrough();
+      bufferStream.end(file.buffer);
+      bufferStream.pipe(upload);
+    });
+  }
+
+  async deleteFotoPerfil(prestadorId: string) {
+    const prestador = await this.prestadorRepository.findOneBy({
+      id: prestadorId,
+    });
+    if (!prestador) {
+      throw new NotFoundException('Prestador no encontrado');
+    }
+
+    if (!prestador.urlFotoPerfil) {
+      return { message: 'No hay foto de perfil para eliminar' };
+    }
+
+    try {
+      const publicId = this.extractPublicIdFromUrl(prestador.urlFotoPerfil);
+
+      await this.cloudinarySdk.uploader.destroy(publicId);
+    } catch (error) {
+      console.error('Error al borrar de Cloudinary:', error);
+    }
+
+    prestador.urlFotoPerfil = null;
+    await this.prestadorRepository.save(prestador);
+
+    return { message: 'Foto de perfil eliminada exitosamente' };
+  }
+
+  private extractPublicIdFromUrl(url: string): string {
+    const parts = url.split('/');
+
+    const folder = 'prestadores';
+    const publicIdWithExtension = parts[parts.length - 1];
+    const publicId = publicIdWithExtension.split('.')[0];
+
+    return `${folder}/${publicId}`;
   }
 }

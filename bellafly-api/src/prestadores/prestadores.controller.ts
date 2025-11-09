@@ -6,14 +6,19 @@ import {
   UseGuards,
   Req,
   Patch,
-} from '@nestjs/common'; // <-- Asegúrate de que 'Body' esté importado
+  UseInterceptors,
+  UploadedFile,
+  Delete,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { PrestadoresService } from './prestadores.service';
 import { CreatePrestadorDto } from './dto/create-prestadore.dto';
 import { LoginPrestadorDto } from './dto/login-prestador.dto';
 import { Prestador } from './entities/prestadore.entity';
 import { UpdatePerfilDto } from './dto/update-perfil.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
 
+import type { Express } from 'express';
 @Controller('prestadores')
 export class PrestadoresController {
   constructor(private readonly prestadoresService: PrestadoresService) {}
@@ -44,5 +49,18 @@ export class PrestadoresController {
   updatePerfil(@Body() updatePerfilDto: UpdatePerfilDto, @Req() req) {
     const prestador: Prestador = req.user;
     return this.prestadoresService.updatePerfil(prestador.id, updatePerfilDto);
+  }
+  @Post('mi-perfil/foto')
+  @UseGuards(AuthGuard())
+  @UseInterceptors(FileInterceptor('file'))
+  uploadFotoPerfil(@Req() req, @UploadedFile() file: Express.Multer.File) {
+    const prestador: Prestador = req.user;
+    return this.prestadoresService.uploadFotoPerfil(prestador.id, file);
+  }
+  @Delete('mi-perfil/foto') // Ruta: DELETE /prestadores/mi-perfil/foto
+  @UseGuards(AuthGuard()) // <-- Usa el Guardia default (JwtStrategy de prestador)
+  deleteFotoPerfil(@Req() req) {
+    const prestador: Prestador = req.user;
+    return this.prestadoresService.deleteFotoPerfil(prestador.id);
   }
 }
