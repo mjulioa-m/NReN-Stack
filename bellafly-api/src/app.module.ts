@@ -11,6 +11,7 @@ import { PortafolioModule } from './portafolio/portafolio.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { ClientesModule } from './clientes/clientes.module';
 import { ReservasModule } from './reservas/reservas.module';
+import { ReseñasModule } from './reseñas/reseñas.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { ReservasModule } from './reservas/reservas.module';
     CloudinaryModule,
     ClientesModule,
     ReservasModule,
+    ReseñasModule,
   ],
   controllers: [AppController],
   providers: [AppService],

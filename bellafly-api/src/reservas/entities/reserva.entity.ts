@@ -1,6 +1,8 @@
 import { Cliente } from 'src/clientes/entities/cliente.entity';
 import { Prestador } from 'src/prestadores/entities/prestadore.entity';
 import { Servicio } from 'src/servicios/entities/servicio.entity';
+import { Reseña } from 'src/reseñas/entities/reseña.entity';
+
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -8,6 +10,7 @@ import {
   ManyToOne,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToOne,
 } from 'typeorm';
 
 // Definimos los posibles estados de una reserva
@@ -65,4 +68,7 @@ export class Reserva {
 
   @Column({ type: 'varchar', nullable: true })
   canceladaPor: string | null;
+
+  @OneToOne(() => Reseña, (reseña) => reseña.reserva)
+  reseña: Reseña; // Una reserva solo puede tener una reseña
 }
